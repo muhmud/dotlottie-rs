@@ -1,3 +1,4 @@
+use cbindgen;
 use lazy_static::lazy_static;
 use std::env;
 
@@ -45,4 +46,15 @@ fn main() {
 
     // Apply build settings
     apply_build_settings(&TARGET_BUILD_SETTINGS);
+
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let mut config: cbindgen::Config = Default::default();
+    config.language = cbindgen::Language::C;
+
+    cbindgen::Builder::new()
+        .with_crate(crate_dir)
+        .with_config(config)
+        .generate()
+        .expect("Unable to generate bindings")
+        .write_to_file("bindings.h");
 }

@@ -1,6 +1,8 @@
 pub use dotlottie_fms::*;
 pub use dotlottie_player_core::*;
 
+mod native;
+
 pub fn create_default_layout() -> Layout {
     Layout::default()
 }
