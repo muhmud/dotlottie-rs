@@ -1,4 +1,4 @@
-use std::ffi::c_char;
+use std::ffi::CString;
 
 use dotlottie_player_core::{Config, Fit, Layout, Mode};
 
@@ -27,7 +27,7 @@ pub struct DotLottieConfig {
     pub segment: DotLottieFloatData,
     pub background_color: u32,
     pub layout: DotLottieLayout,
-    pub marker: *const c_char,
+    pub marker: *mut i8,
 }
 
 impl DotLottieConfig {
@@ -44,7 +44,15 @@ impl DotLottieConfig {
                 fit: self.layout.fit.clone(),
                 align: Vec::from_raw_parts(self.segment.ptr, self.segment.size, self.segment.size),
             },
-            marker: String::from_raw_parts(self.marker.ptr, self.marker.size, self.marker.size),
+            marker: to_string(self.marker),
         }
+    }
+}
+
+pub unsafe fn to_string(value: *mut i8) -> String {
+    if value.is_null() {
+        String::new()
+    } else {
+        CString::from_raw(value).to_str().unwrap_or("").to_owned()
     }
 }

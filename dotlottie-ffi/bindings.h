@@ -42,7 +42,12 @@ typedef struct DotLottieConfig {
   struct DotLottieFloatData segment;
   uint32_t background_color;
   struct DotLottieLayout layout;
-  const char *marker;
+  int8_t *marker;
 } DotLottieConfig;
+
+bool dotlottie_player_load_animation_data(struct DotLottiePlayer *ptr,
+                                          int8_t *animation_data_str,
+                                          uint32_t width,
+                                          uint32_t height);
 
 struct DotLottiePlayer *new_dotlottie_player(const struct DotLottieConfig *ptr);

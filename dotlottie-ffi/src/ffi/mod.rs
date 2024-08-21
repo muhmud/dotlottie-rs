@@ -13,3 +13,18 @@ pub unsafe extern "C" fn new_dotlottie_player(ptr: *const DotLottieConfig) -> *m
         std::ptr::null_mut()
     }
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn dotlottie_player_load_animation_data(
+    ptr: *mut DotLottiePlayer,
+    animation_data_str: *mut i8,
+    width: u32,
+    height: u32,
+) -> bool {
+    if let Some(dotlottie_player) = ptr.as_ref() {
+        let animation_data = types::to_string(animation_data_str);
+        dotlottie_player.load_animation_data(&animation_data, width, height)
+    } else {
+        false
+    }
+}
