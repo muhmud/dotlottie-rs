@@ -1,6 +1,6 @@
 use cbindgen;
 use lazy_static::lazy_static;
-use std::env;
+use std::{env, path::PathBuf};
 
 // Target triple for WASM
 const WASM32_UNKNOWN_EMSCRIPTEN: &str = "wasm32-unknown-emscripten";
@@ -38,6 +38,9 @@ fn apply_build_settings(build_settings: &BuildSettings) {
 }
 
 fn main() {
+    // Always re-run the build script
+    println!("cargo:rerun-if-changed=NULL");
+
     if is_wasm_build() {
         uniffi::generate_scaffolding("src/dotlottie_player_cpp.udl").unwrap();
     } else {
@@ -47,9 +50,10 @@ fn main() {
     // Apply build settings
     apply_build_settings(&TARGET_BUILD_SETTINGS);
 
+    // Execute cbindgen
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let mut config: cbindgen::Config = Default::default();
-    config.language = cbindgen::Language::C;
+    let config_path = PathBuf::from(&crate_dir).join("cbindgen.toml");
+    let config = cbindgen::Config::from_file(config_path).unwrap();
 
     cbindgen::Builder::new()
         .with_crate(crate_dir)

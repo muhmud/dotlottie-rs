@@ -1,4 +1,5 @@
 #[derive(Clone, PartialEq)]
+#[repr(C)]
 pub enum Fit {
     Contain,
     Fill,

@@ -7,9 +7,9 @@ build = "build.rs"
 [profile.release]
 lto = true
 opt-level = "s"
-strip = true 
+strip = true
 codegen-units = 1
-panic = "abort" 
+panic = "abort"
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]
@@ -28,4 +28,4 @@ cfg-if = "1.0"
 [build-dependencies]
 uniffi = { version = "0.28.0", features = ["build"] }
 lazy_static = "1.4"
-cbindgen = "0.20.0"
+cbindgen = "0.26.0"

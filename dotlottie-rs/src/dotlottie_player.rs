@@ -33,6 +33,7 @@ pub enum PlaybackState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(C)]
 pub enum Mode {
     Forward,
     Reverse,
@@ -56,6 +57,7 @@ impl Direction {
 }
 
 #[derive(Clone, PartialEq)]
+#[repr(C)]
 pub struct Config {
     pub mode: Mode,
     pub loop_animation: bool,
