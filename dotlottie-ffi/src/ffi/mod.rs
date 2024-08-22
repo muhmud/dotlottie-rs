@@ -5,6 +5,19 @@ use uniffi;
 
 pub mod types;
 
+const EXIT_SUCCESS: i32 = 0;
+const EXIT_ERROR: i32 = 1;
+
+unsafe fn exec_dotlottie_player_op<Op>(ptr: *mut DotLottiePlayer, op: Op) -> i32
+where
+    Op: Fn(&DotLottiePlayer) -> i32,
+{
+    match ptr.as_ref() {
+        Some(dotlottie_player) => op(&dotlottie_player),
+        _ => EXIT_ERROR,
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn new_dotlottie_player(ptr: *const DotLottieConfig) -> *mut DotLottiePlayer {
     if let Some(dotlottie_config) = ptr.as_ref() {
@@ -22,13 +35,14 @@ pub unsafe extern "C" fn dotlottie_player_load_animation_data(
     animation_data_str: *mut i8,
     width: u32,
     height: u32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let animation_data = types::to_string(animation_data_str);
-        dotlottie_player.load_animation_data(&animation_data, width, height)
-    } else {
-        false
-    }
+        *result = dotlottie_player.load_animation_data(&animation_data, width, height);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -390,7 +404,10 @@ pub unsafe extern "C" fn dotlottie_animation_size(ptr: *mut DotLottiePlayer) -> 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_load_state_machine(ptr: *mut DotLottiePlayer, str: *mut i8) -> bool {
+pub unsafe extern "C" fn dotlottie_load_state_machine(
+    ptr: *mut DotLottiePlayer,
+    str: *mut i8,
+) -> bool {
     if let Some(dotlottie_player) = ptr.as_ref() {
         let str2 = types::to_string(str);
         dotlottie_player.load_state_machine(&str2)
@@ -418,7 +435,11 @@ pub unsafe extern "C" fn dotlottie_stop_state_machine(ptr: *mut DotLottiePlayer)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_set_state_machine_numeric_context(ptr: *mut DotLottiePlayer, key_str: *mut i8, value: f32) -> bool {
+pub unsafe extern "C" fn dotlottie_set_state_machine_numeric_context(
+    ptr: *mut DotLottiePlayer,
+    key_str: *mut i8,
+    value: f32,
+) -> bool {
     if let Some(dotlottie_player) = ptr.as_ref() {
         let key = types::to_string(key_str);
         dotlottie_player.set_state_machine_numeric_context(&key, value)
@@ -428,7 +449,11 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_numeric_context(ptr: *mut D
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_set_state_machine_string_context(ptr: *mut DotLottiePlayer, key_str: *mut i8, value_str: *mut i8) -> bool {
+pub unsafe extern "C" fn dotlottie_set_state_machine_string_context(
+    ptr: *mut DotLottiePlayer,
+    key_str: *mut i8,
+    value_str: *mut i8,
+) -> bool {
     if let Some(dotlottie_player) = ptr.as_ref() {
         let key = types::to_string(key_str);
         let value = types::to_string(value_str);
@@ -439,7 +464,11 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_string_context(ptr: *mut Do
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_set_state_machine_boolean_context(ptr: *mut DotLottiePlayer, key_str: *mut i8, value: bool) -> bool {
+pub unsafe extern "C" fn dotlottie_set_state_machine_boolean_context(
+    ptr: *mut DotLottiePlayer,
+    key_str: *mut i8,
+    value: bool,
+) -> bool {
     if let Some(dotlottie_player) = ptr.as_ref() {
         let key = types::to_string(key_str);
         dotlottie_player.set_state_machine_boolean_context(&key, value)
@@ -449,7 +478,9 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_boolean_context(ptr: *mut D
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(ptr: *mut DotLottiePlayer) -> vec<String> {
+pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(
+    ptr: *mut DotLottiePlayer,
+) -> vec<String> {
     if let Some(dotlottie_player) = ptr.as_ref() {
         dotlottie_player.state_machine_framework_setup()
     } else {
@@ -458,7 +489,10 @@ pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(ptr: *mut DotLo
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_load_state_machine_data(ptr: *mut DotLottiePlayer, state_machine_str: *mut i8) -> vec<String> {
+pub unsafe extern "C" fn dotlottie_load_state_machine_data(
+    ptr: *mut DotLottiePlayer,
+    state_machine_str: *mut i8,
+) -> vec<String> {
     if let Some(dotlottie_player) = ptr.as_ref() {
         let state_machine = types::to_string(state_machine_str);
         dotlottie_player.load_state_machine_data(&state_machine)
