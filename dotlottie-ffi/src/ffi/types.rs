@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::ptr;
 
 use dotlottie_player_core::{Config, Fit, Layout, Mode};
 
@@ -55,4 +56,23 @@ pub unsafe fn to_string(value: *mut i8) -> String {
     } else {
         CString::from_raw(value).to_str().unwrap_or("").to_owned()
     }
+}
+
+pub unsafe fn to_mut_i8(value: String) -> *mut i8 {
+    if value.is_empty() {
+        ptr::null_mut()  // Return a null pointer if the string is empty
+    } else {
+        let c_string = CString::new(value).expect("CString::new failed");
+        c_string.into_raw()  // Convert the CString into a raw pointer
+    }
+}
+
+pub fn vec_string_to_mut_i8(vec: Vec<String>) -> *mut i8 {
+    if vec.is_empty() {
+        return ptr::null_mut();
+    }
+
+    let concatenated = vec.join("\0");
+    let cstring = CString::new(concatenated).expect("Failed to create CString");
+    cstring.into_raw()
 }
