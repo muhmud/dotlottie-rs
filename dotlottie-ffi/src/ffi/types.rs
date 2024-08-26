@@ -1,12 +1,26 @@
 use std::ffi::CString;
 use std::ptr;
 
-use dotlottie_player_core::{Config, Fit, Layout, Mode};
+use dotlottie_player_core::{Config, Fit, Layout, Mode, Marker};
 
 #[derive(Clone, PartialEq)]
 #[repr(C)]
 pub struct DotLottieFloatData {
     pub ptr: *mut f32,
+    pub size: usize,
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottiei8Data {
+    pub ptr: *mut i8,
+    pub size: usize,
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottieMarkerData {
+    pub ptr: *mut Marker,
     pub size: usize,
 }
 
@@ -67,12 +81,47 @@ pub unsafe fn to_mut_i8(value: String) -> *mut i8 {
     }
 }
 
-pub fn vec_string_to_mut_i8(vec: Vec<String>) -> *mut i8 {
-    if vec.is_empty() {
-        return ptr::null_mut();
-    }
+pub unsafe fn vec_strings_to_dotlottiei8data(strings: &Vec<String>) -> DotLottiei8Data {
+    // Concatenate all strings into one String
+    let concatenated = strings.join("");
 
-    let concatenated = vec.join("\0");
-    let cstring = CString::new(concatenated).expect("Failed to create CString");
-    cstring.into_raw()
+    // Convert the concatenated String into bytes
+    let bytes = concatenated.into_bytes();
+    let size = bytes.len();
+
+    // Convert bytes into a Vec<i8>
+    let mut vec_i8: Vec<i8> = bytes.into_iter().map(|b| b as i8).collect();
+
+    // Get a raw pointer to the Vec<i8> data
+    let ptr = vec_i8.as_mut_ptr();
+
+    // Prevent Rust from deallocating the memory by not using std::mem::forget
+    std::mem::forget(vec_i8); // Keep the memory alive
+
+    DotLottiei8Data { ptr, size }
+}
+
+pub fn vec_floats_to_dotlottiefloatdata(floats: Vec<f32>) -> DotLottieFloatData {
+    let size = floats.len(); // Get the size of the data
+
+    // Box the Vec<f32> to ensure memory is managed properly
+    let boxed_slice = floats.into_boxed_slice();
+
+    // Get a raw pointer to the boxed slice
+    let ptr = boxed_slice.as_ptr() as *mut f32;
+
+    // Move the boxed slice out of scope to prevent deallocation
+    std::mem::forget(boxed_slice);
+
+    DotLottieFloatData { ptr, size }
+}
+
+
+pub unsafe fn vec_markers_to_dotlottiemarkerdata(markers: &mut Vec<Marker>) -> DotLottieMarkerData {
+    let size = markers.len(); // Get the size of the data
+
+    // Get a raw pointer to the data and the size
+    let ptr = markers.as_mut_ptr();
+
+    DotLottieMarkerData { ptr, size }
 }

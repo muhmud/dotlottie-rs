@@ -25,9 +25,16 @@ typedef struct DotLottiePlayer DotLottiePlayer;
 
 typedef struct Layout Layout;
 
+typedef struct Marker Marker;
+
 typedef struct String String;
 
 typedef struct Vec_f32 Vec_f32;
+
+typedef struct DotLottieFloatData {
+  float *ptr;
+  size_t size;
+} DotLottieFloatData;
 
 typedef struct Config {
   enum Mode mode;
@@ -41,10 +48,15 @@ typedef struct Config {
   struct String marker;
 } Config;
 
-typedef struct DotLottieFloatData {
-  float *ptr;
+typedef struct DotLottieMarkerData {
+  struct Marker *ptr;
   size_t size;
-} DotLottieFloatData;
+} DotLottieMarkerData;
+
+typedef struct DotLottiei8Data {
+  int8_t *ptr;
+  size_t size;
+} DotLottiei8Data;
 
 typedef struct DotLottieLayout {
   enum Fit fit;
@@ -67,7 +79,7 @@ int32_t dotlottie_active_animation_id(struct DotLottiePlayer *ptr, int8_t *resul
 
 int32_t dotlottie_active_theme_id(struct DotLottiePlayer *ptr, int8_t *result);
 
-int32_t dotlottie_animation_size(struct DotLottiePlayer *ptr, float *result);
+int32_t dotlottie_animation_size(struct DotLottiePlayer *ptr, struct DotLottieFloatData *result);
 
 int32_t dotlottie_buffer_len(struct DotLottiePlayer *ptr, uint64_t *result);
 
@@ -106,6 +118,8 @@ int32_t dotlottie_load_theme_data(struct DotLottiePlayer *ptr,
 int32_t dotlottie_loop_count(struct DotLottiePlayer *ptr, uint32_t *result);
 
 int32_t dotlottie_manifest_string(struct DotLottiePlayer *ptr, int8_t *result);
+
+int32_t dotlottie_markers(struct DotLottiePlayer *ptr, struct DotLottieMarkerData *result);
 
 int32_t dotlottie_pause(struct DotLottiePlayer *ptr, bool *result);
 
@@ -168,7 +182,8 @@ int32_t dotlottie_set_viewport(struct DotLottiePlayer *ptr,
 
 int32_t dotlottie_start_state_machine(struct DotLottiePlayer *ptr, bool *result);
 
-int32_t dotlottie_state_machine_framework_setup(struct DotLottiePlayer *ptr, int8_t *result);
+int32_t dotlottie_state_machine_framework_setup(struct DotLottiePlayer *ptr,
+                                                struct DotLottiei8Data *result);
 
 int32_t dotlottie_stop(struct DotLottiePlayer *ptr, bool *result);
 

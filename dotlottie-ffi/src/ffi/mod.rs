@@ -91,7 +91,10 @@ pub unsafe extern "C" fn dotlottie_player_load_animation(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_manifest_string(ptr: *mut DotLottiePlayer, result: *mut i8) -> i32 {
+pub unsafe extern "C" fn dotlottie_manifest_string(
+    ptr: *mut DotLottiePlayer,
+    result: *mut i8,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = *types::to_mut_i8(dotlottie_player.manifest_string());
 
@@ -127,7 +130,10 @@ pub unsafe extern "C" fn dotlottie_config(ptr: *mut DotLottiePlayer, result: *mu
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_total_frames(ptr: *mut DotLottiePlayer, result: *mut f32) -> i32 {
+pub unsafe extern "C" fn dotlottie_total_frames(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.total_frames();
 
@@ -145,7 +151,10 @@ pub unsafe extern "C" fn dotlottie_duration(ptr: *mut DotLottiePlayer, result: *
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_current_frame(ptr: *mut DotLottiePlayer, result: *mut f32) -> i32 {
+pub unsafe extern "C" fn dotlottie_current_frame(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.current_frame();
 
@@ -226,7 +235,10 @@ pub unsafe extern "C" fn dotlottie_stop(ptr: *mut DotLottiePlayer, result: *mut 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_request_frame(ptr: *mut DotLottiePlayer, result: *mut f32) -> i32 {
+pub unsafe extern "C" fn dotlottie_request_frame(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.request_frame();
 
@@ -235,7 +247,11 @@ pub unsafe extern "C" fn dotlottie_request_frame(ptr: *mut DotLottiePlayer, resu
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_set_frame(ptr: *mut DotLottiePlayer, no: f32, result: *mut bool) -> i32 {
+pub unsafe extern "C" fn dotlottie_set_frame(
+    ptr: *mut DotLottiePlayer,
+    no: f32,
+    result: *mut bool,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.set_frame(no);
 
@@ -244,7 +260,11 @@ pub unsafe extern "C" fn dotlottie_set_frame(ptr: *mut DotLottiePlayer, no: f32,
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_seek(ptr: *mut DotLottiePlayer, no: f32, result: *mut bool) -> i32 {
+pub unsafe extern "C" fn dotlottie_seek(
+    ptr: *mut DotLottiePlayer,
+    no: f32,
+    result: *mut bool,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.seek(no);
 
@@ -285,7 +305,10 @@ pub unsafe extern "C" fn dotlottie_clear(ptr: *mut DotLottiePlayer) -> i32 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_complete(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+pub unsafe extern "C" fn dotlottie_is_complete(
+    ptr: *mut DotLottiePlayer,
+    result: *mut bool,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.is_complete();
 
@@ -321,18 +344,21 @@ pub unsafe extern "C" fn dotlottie_load_theme_data(
     })
 }
 
-/*#[no_mangle]
-pub unsafe extern "C" fn dotlottie_markers(ptr: *mut DotLottiePlayer, result: *mut Marker) -> i32 {
+#[no_mangle]
+pub unsafe extern "C" fn dotlottie_markers(ptr: *mut DotLottiePlayer, result: *mut types::DotLottieMarkerData) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-         let markers = dotlottie_player.markers();
-         *result = markers.as_mut_ptr();
+         let mut markers = dotlottie_player.markers();
+         *result = types::vec_markers_to_dotlottiemarkerdata(&mut markers);
 
         EXIT_SUCCESS
     })
-} */
+}
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_active_animation_id(ptr: *mut DotLottiePlayer, result: *mut i8) -> i32 {
+pub unsafe extern "C" fn dotlottie_active_animation_id(
+    ptr: *mut DotLottiePlayer,
+    result: *mut i8,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = *types::to_mut_i8(dotlottie_player.active_animation_id());
 
@@ -341,7 +367,10 @@ pub unsafe extern "C" fn dotlottie_active_animation_id(ptr: *mut DotLottiePlayer
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_active_theme_id(ptr: *mut DotLottiePlayer, result: *mut i8) -> i32 {
+pub unsafe extern "C" fn dotlottie_active_theme_id(
+    ptr: *mut DotLottiePlayer,
+    result: *mut i8,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = *types::to_mut_i8(dotlottie_player.active_theme_id());
 
@@ -366,7 +395,10 @@ pub unsafe extern "C" fn dotlottie_set_viewport(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_segment_duration(ptr: *mut DotLottiePlayer, result: *mut f32) -> i32 {
+pub unsafe extern "C" fn dotlottie_segment_duration(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.segment_duration();
 
@@ -375,9 +407,12 @@ pub unsafe extern "C" fn dotlottie_segment_duration(ptr: *mut DotLottiePlayer, r
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_animation_size(ptr: *mut DotLottiePlayer, result: *mut f32) -> i32 {
+pub unsafe extern "C" fn dotlottie_animation_size(
+    ptr: *mut DotLottiePlayer,
+    result: *mut types::DotLottieFloatData,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = *dotlottie_player.animation_size().as_mut_ptr();
+        *result = types::vec_floats_to_dotlottiefloatdata(dotlottie_player.animation_size());
 
         EXIT_SUCCESS
     })
@@ -398,7 +433,10 @@ pub unsafe extern "C" fn dotlottie_load_state_machine(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_start_state_machine(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+pub unsafe extern "C" fn dotlottie_start_state_machine(
+    ptr: *mut DotLottiePlayer,
+    result: *mut bool,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.start_state_machine();
 
@@ -407,7 +445,10 @@ pub unsafe extern "C" fn dotlottie_start_state_machine(ptr: *mut DotLottiePlayer
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_stop_state_machine(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+pub unsafe extern "C" fn dotlottie_stop_state_machine(
+    ptr: *mut DotLottiePlayer,
+    result: *mut bool,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         *result = dotlottie_player.stop_state_machine();
 
@@ -462,9 +503,12 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_boolean_context(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(ptr: *mut DotLottiePlayer, result: *mut i8) -> i32 {
+pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(
+    ptr: *mut DotLottiePlayer,
+    result: *mut types::DotLottiei8Data,
+) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = *types::vec_string_to_mut_i8(dotlottie_player.state_machine_framework_setup());
+       *result = types::vec_strings_to_dotlottiei8data(&dotlottie_player.state_machine_framework_setup());
 
         EXIT_SUCCESS
     })
