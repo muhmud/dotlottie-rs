@@ -1,7 +1,9 @@
+use dotlottie_player_core::{Observer, StateMachineObserver};
 use std::ffi::CString;
 use std::ptr;
+use std::sync::Arc;
 
-use dotlottie_player_core::{Config, Fit, Layout, Mode, Marker};
+use dotlottie_player_core::{Config, Fit, Layout, Marker, Mode};
 
 #[derive(Clone, PartialEq)]
 #[repr(C)]
@@ -74,10 +76,10 @@ pub unsafe fn to_string(value: *mut i8) -> String {
 
 pub unsafe fn to_mut_i8(value: String) -> *mut i8 {
     if value.is_empty() {
-        ptr::null_mut()  // Return a null pointer if the string is empty
+        ptr::null_mut() // Return a null pointer if the string is empty
     } else {
         let c_string = CString::new(value).expect("CString::new failed");
-        c_string.into_raw()  // Convert the CString into a raw pointer
+        c_string.into_raw() // Convert the CString into a raw pointer
     }
 }
 
@@ -116,7 +118,6 @@ pub fn vec_floats_to_dotlottiefloatdata(floats: Vec<f32>) -> DotLottieFloatData 
     DotLottieFloatData { ptr, size }
 }
 
-
 pub unsafe fn vec_markers_to_dotlottiemarkerdata(markers: &mut Vec<Marker>) -> DotLottieMarkerData {
     let size = markers.len(); // Get the size of the data
 
@@ -124,4 +125,104 @@ pub unsafe fn vec_markers_to_dotlottiemarkerdata(markers: &mut Vec<Marker>) -> D
     let ptr = markers.as_mut_ptr();
 
     DotLottieMarkerData { ptr, size }
+}
+
+// Function pointer types
+pub type OnOp = unsafe extern "C" fn();
+
+pub type OnFrameOp = unsafe extern "C" fn(f32);
+pub type OnRenderOp = unsafe extern "C" fn(f32);
+pub type OnLoopOp = unsafe extern "C" fn(u32);
+
+// Observers
+#[repr(C)]
+pub struct CObserver {
+    pub on_load_op: OnOp,
+    pub on_load_error_op: OnOp,
+    pub on_play_op: OnOp,
+    pub on_pause_op: OnOp,
+    pub on_stop_op: OnOp,
+    pub on_frame_op: OnFrameOp,
+    pub on_render_op: OnRenderOp,
+    pub on_loop_op: OnLoopOp,
+    pub on_complete_op: OnOp,
+}
+
+impl Observer for CObserver {
+    fn on_load(&self) {
+        unsafe { (self.on_load_op)() }
+    }
+    fn on_load_error(&self) {
+        unsafe { (self.on_load_error_op)() }
+    }
+    fn on_play(&self) {
+        unsafe { (self.on_play_op)() }
+    }
+    fn on_pause(&self) {
+        unsafe { (self.on_pause_op)() }
+    }
+    fn on_stop(&self) {
+        unsafe { (self.on_stop_op)() }
+    }
+    fn on_frame(&self, frame_no: f32) {
+        unsafe { (self.on_frame_op)(frame_no) }
+    }
+    fn on_render(&self, frame_no: f32) {
+        unsafe { (self.on_render_op)(frame_no) }
+    }
+    fn on_loop(&self, loop_count: u32) {
+        unsafe { (self.on_loop_op)(loop_count) }
+    }
+    fn on_complete(&self) {
+        unsafe { (self.on_complete_op)() }
+    }
+}
+
+pub type OnTransitionOp = unsafe extern "C" fn(*mut i8, *mut i8);
+pub type OnStateEnteredOp = unsafe extern "C" fn(*mut i8);
+pub type OnStateExitOp = unsafe extern "C" fn(*mut i8);
+
+#[repr(C)]
+pub struct CStateMachineObserver {
+    pub on_transition_op: OnTransitionOp,
+    pub on_state_entered_op: OnStateEnteredOp,
+    pub on_state_exit_op: OnStateExitOp,
+}
+
+impl StateMachineObserver for CStateMachineObserver {
+    fn on_transition(&self, previous_state: String, new_state: String) {
+        unsafe { (self.on_transition_op)(to_mut_i8(previous_state), to_mut_i8(new_state)) }
+    }
+    fn on_state_entered(&self, entering_state: String) {
+        unsafe { (self.on_state_entered_op)(to_mut_i8(entering_state)) }
+    }
+    fn on_state_exit(&self, leaving_state: String) {
+        unsafe { (self.on_state_exit_op)(to_mut_i8(leaving_state)) }
+    }
+}
+
+pub unsafe fn cobserver_to_box_of_observer(ptr: *mut CObserver) -> Box<dyn Observer> {
+    if ptr.is_null() {
+        panic!("Received null pointer");
+    }
+
+    // Convert the raw pointer to `Box<dyn Observer>`
+    Box::from_raw(ptr as *mut dyn Observer)
+}
+
+pub fn box_of_observer_to_arc_of_observer(box_observer: Box<dyn Observer>) -> Arc<dyn Observer> {
+    Arc::from(box_observer)
+}
+
+pub unsafe fn cstate_machine_observer_to_box_of_state_machine_observer(ptr: *mut CStateMachineObserver) -> Box<dyn StateMachineObserver> {
+    if ptr.is_null() {
+        panic!("Received null pointer");
+    }
+
+    // Convert the raw pointer to `Box<dyn Observer>`
+    Box::from_raw(ptr as *mut dyn StateMachineObserver)
+}
+
+pub fn box_of_state_machine_observer_to_arc_of_state_machine_observer(state_machine_observer: Box<dyn StateMachineObserver>) -> Arc<dyn StateMachineObserver> {
+    Arc::from(state_machine_observer)
 }
