@@ -1,7 +1,5 @@
-use dotlottie_fms::Manifest;
-use dotlottie_player_core::{Config, DotLottiePlayer, Event, Marker};
+use dotlottie_player_core::{Config, DotLottiePlayer};
 use types::DotLottieConfig;
-use uniffi;
 
 pub mod types;
 
@@ -51,27 +49,29 @@ pub unsafe extern "C" fn dotlottie_player_load_animation_path(
     animation_path_str: *mut i8,
     width: u32,
     height: u32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let animation_path = types::to_string(animation_path_str);
-        dotlottie_player.load_animation_path(&animation_path, width, height)
-    } else {
-        false
-    }
+        *result = dotlottie_player.load_animation_path(&animation_path, width, height);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_player_load_dotlottie_data(
     ptr: *mut DotLottiePlayer,
-    file_data: uniffi::deps::bytes,
+    file_data: &[u8],
     width: u32,
     height: u32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.load_dotlottie_data(&file_data, width, height)
-    } else {
-        false
-    }
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.load_dotlottie_data(&file_data, width, height);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -80,203 +80,205 @@ pub unsafe extern "C" fn dotlottie_player_load_animation(
     animation_id_str: *mut i8,
     width: u32,
     height: u32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let animation_id = types::to_string(animation_id_str);
-        dotlottie_player.load_animation(&animation_id, width, height)
-    } else {
-        false
-    }
+        *result = dotlottie_player.load_animation(&animation_id, width, height);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_manifest(ptr: *mut DotLottiePlayer) -> Manifest {
-    // When I put an ? here it says expected item what does that mean?
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.manifest()
-    } else {
-        Manifest
-    }
+pub unsafe extern "C" fn dotlottie_manifest_string(
+    ptr: *mut DotLottiePlayer,
+    result: *mut i8,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = *types::to_mut_i8(dotlottie_player.manifest_string());
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_manifest_string(ptr: *mut DotLottiePlayer) -> String {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.manifest_string()
-    } else {
-        String::from("")
-    }
+pub unsafe extern "C" fn dotlottie_buffer_ptr(ptr: *mut DotLottiePlayer, result: *mut u64) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.buffer_ptr();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_buffer_ptr(ptr: *mut DotLottiePlayer) -> u64 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.buffer_ptr()
-    } else {
-        u64::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_buffer_len(ptr: *mut DotLottiePlayer, result: *mut u64) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.buffer_len();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_buffer_len(ptr: *mut DotLottiePlayer) -> u64 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.buffer_len()
-    } else {
-        u64::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_config(ptr: *mut DotLottiePlayer, result: *mut Config) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.config();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_config(ptr: *mut DotLottiePlayer) -> Config {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.config()
-    } else {
-        Config
-    }
+pub unsafe extern "C" fn dotlottie_total_frames(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.total_frames();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_total_frames(ptr: *mut DotLottiePlayer) -> f32 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.total_frames()
-    } else {
-        f32::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_duration(ptr: *mut DotLottiePlayer, result: *mut f32) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.duration();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_duration(ptr: *mut DotLottiePlayer) -> f32 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.duration()
-    } else {
-        f32::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_current_frame(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.current_frame();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_current_frame(ptr: *mut DotLottiePlayer) -> f32 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.current_frame()
-    } else {
-        f32::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_loop_count(ptr: *mut DotLottiePlayer, result: *mut u32) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.loop_count();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_loop_count(ptr: *mut DotLottiePlayer) -> u32 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.loop_count()
-    } else {
-        u32::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_is_loaded(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.is_loaded();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_loaded(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_loaded()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_is_playing(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.is_playing();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_playing(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_playing()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_is_paused(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.is_paused();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_playing(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_playing()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_is_stopped(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.is_stopped();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_paused(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_paused()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_play(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.play();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_stopped(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_stopped()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_pause(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.pause();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_play(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.play()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_stop(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.stop();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_pause(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.pause()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_request_frame(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.request_frame();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_stop(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.stop()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_set_frame(
+    ptr: *mut DotLottiePlayer,
+    no: f32,
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.set_frame(no);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_request_frame(ptr: *mut DotLottiePlayer) -> f32 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.request_frame()
-    } else {
-        f32::from(0)
-    }
+pub unsafe extern "C" fn dotlottie_seek(
+    ptr: *mut DotLottiePlayer,
+    no: f32,
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.seek(no);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_set_frame(ptr: *mut DotLottiePlayer, no: f32) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.set_frame(no)
-    } else {
-        false
-    }
-}
+pub unsafe extern "C" fn dotlottie_render(ptr: *mut DotLottiePlayer, result: *mut bool) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.render();
 
-#[no_mangle]
-pub unsafe extern "C" fn dotlottie_seek(ptr: *mut DotLottiePlayer, no: f32) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.seek(no)
-    } else {
-        false
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn dotlottie_render(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.render()
-    } else {
-        false
-    }
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -284,90 +286,99 @@ pub unsafe extern "C" fn dotlottie_resize(
     ptr: *mut DotLottiePlayer,
     width: u32,
     height: u32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.resize(width, height)
-    } else {
-        false
-    }
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.resize(width, height);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_clear(ptr: *mut DotLottiePlayer) {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.clear()
-    }
+pub unsafe extern "C" fn dotlottie_clear(ptr: *mut DotLottiePlayer) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        dotlottie_player.clear();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_complete(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_complete()
-    } else {
-        false
-    }
-}
+pub unsafe extern "C" fn dotlottie_is_complete(
+    ptr: *mut DotLottiePlayer,
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.is_complete();
 
-#[no_mangle]
-pub unsafe extern "C" fn dotlottie_is_complete(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.is_complete()
-    } else {
-        false
-    }
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_load_theme(
     ptr: *mut DotLottiePlayer,
     theme_id_str: *mut i8,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let theme_id = types::to_string(theme_id_str);
-        dotlottie_player.load_theme(&theme_id)
-    } else {
-        false
-    }
+        *result = dotlottie_player.load_theme(&theme_id);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_load_theme(
+pub unsafe extern "C" fn dotlottie_load_theme_data(
     ptr: *mut DotLottiePlayer,
     theme_data_str: *mut i8,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let theme_data = types::to_string(theme_data_str);
-        dotlottie_player.load_theme_data(&theme_data)
-    } else {
-        false
-    }
+        *result = dotlottie_player.load_theme_data(&theme_data);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_markers(ptr: *mut DotLottiePlayer) -> vec<Marker> {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.markers()
-    } else {
-        Some(0)
-    }
+pub unsafe extern "C" fn dotlottie_markers(
+    ptr: *mut DotLottiePlayer,
+    result: *mut types::DotLottieMarkerData,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        let mut markers = dotlottie_player.markers();
+        *result = types::vec_markers_to_dotlottiemarkerdata(&mut markers);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_active_animation_id(ptr: *mut DotLottiePlayer) -> String {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.active_animation_id()
-    } else {
-        Some("")
-    }
+pub unsafe extern "C" fn dotlottie_active_animation_id(
+    ptr: *mut DotLottiePlayer,
+    result: *mut i8,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = *types::to_mut_i8(dotlottie_player.active_animation_id());
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_active_theme_id(ptr: *mut DotLottiePlayer) -> String {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.active_theme_id()
-    } else {
-        Some("")
-    }
+pub unsafe extern "C" fn dotlottie_active_theme_id(
+    ptr: *mut DotLottiePlayer,
+    result: *mut i8,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = *types::to_mut_i8(dotlottie_player.active_theme_id());
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -377,61 +388,75 @@ pub unsafe extern "C" fn dotlottie_set_viewport(
     y: i32,
     w: i32,
     h: i32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.set_viewport(x, y, w, h)
-    } else {
-        false
-    }
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.set_viewport(x, y, w, h);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_segment_duration(ptr: *mut DotLottiePlayer) -> f32 {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.segment_duration()
-    } else {
-        Some(0)
-    }
+pub unsafe extern "C" fn dotlottie_segment_duration(
+    ptr: *mut DotLottiePlayer,
+    result: *mut f32,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.segment_duration();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_animation_size(ptr: *mut DotLottiePlayer) -> vec<f32> {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.animation_size()
-    } else {
-        Some(0)
-    }
+pub unsafe extern "C" fn dotlottie_animation_size(
+    ptr: *mut DotLottiePlayer,
+    result: *mut types::DotLottieFloatData,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = types::vec_floats_to_dotlottiefloatdata(dotlottie_player.animation_size());
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_load_state_machine(
     ptr: *mut DotLottiePlayer,
     str: *mut i8,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let str2 = types::to_string(str);
-        dotlottie_player.load_state_machine(&str2)
-    } else {
-        false
-    }
+        *result = dotlottie_player.load_state_machine(&str2);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_start_state_machine(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.start_state_machine()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_start_state_machine(
+    ptr: *mut DotLottiePlayer,
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.start_state_machine();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dotlottie_stop_state_machine(ptr: *mut DotLottiePlayer) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.stop_state_machine()
-    } else {
-        false
-    }
+pub unsafe extern "C" fn dotlottie_stop_state_machine(
+    ptr: *mut DotLottiePlayer,
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = dotlottie_player.stop_state_machine();
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -439,13 +464,14 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_numeric_context(
     ptr: *mut DotLottiePlayer,
     key_str: *mut i8,
     value: f32,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let key = types::to_string(key_str);
-        dotlottie_player.set_state_machine_numeric_context(&key, value)
-    } else {
-        false
-    }
+        *result = dotlottie_player.set_state_machine_numeric_context(&key, value);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -453,14 +479,15 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_string_context(
     ptr: *mut DotLottiePlayer,
     key_str: *mut i8,
     value_str: *mut i8,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let key = types::to_string(key_str);
         let value = types::to_string(value_str);
-        dotlottie_player.set_state_machine_numeric_context(&key, &value)
-    } else {
-        false
-    }
+        *result = dotlottie_player.set_state_machine_string_context(&key, &value);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
@@ -468,35 +495,96 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_boolean_context(
     ptr: *mut DotLottiePlayer,
     key_str: *mut i8,
     value: bool,
-) -> bool {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let key = types::to_string(key_str);
-        dotlottie_player.set_state_machine_boolean_context(&key, value)
-    } else {
-        false
-    }
+        *result = dotlottie_player.set_state_machine_boolean_context(&key, value);
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(
     ptr: *mut DotLottiePlayer,
-) -> vec<String> {
-    if let Some(dotlottie_player) = ptr.as_ref() {
-        dotlottie_player.state_machine_framework_setup()
-    } else {
-        Some("")
-    }
+    result: *mut types::DotLottiei8Data,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = types::vec_strings_to_dotlottiei8data(
+            &dotlottie_player.state_machine_framework_setup(),
+        );
+
+        EXIT_SUCCESS
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_load_state_machine_data(
     ptr: *mut DotLottiePlayer,
     state_machine_str: *mut i8,
-) -> vec<String> {
-    if let Some(dotlottie_player) = ptr.as_ref() {
+    result: *mut bool,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let state_machine = types::to_string(state_machine_str);
-        dotlottie_player.load_state_machine_data(&state_machine)
-    } else {
-        Some("")
-    }
+        *result = dotlottie_player.load_state_machine_data(&state_machine);
+
+        EXIT_SUCCESS
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn dotlottie_player_subscribe(
+    ptr: *mut DotLottiePlayer,
+    observer: *mut types::CObserver,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        let box_observer = types::cobserver_to_box_of_observer(observer);
+        let arc_observer = types::box_of_observer_to_arc_of_observer(box_observer);
+
+        dotlottie_player.subscribe(arc_observer);
+        EXIT_SUCCESS
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn dotlottie_player_unsubscribe(
+    ptr: *mut DotLottiePlayer,
+    observer: *mut types::CObserver,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        let box_observer = types::cobserver_to_box_of_observer(observer);
+        let arc_observer = types::box_of_observer_to_arc_of_observer(box_observer);
+
+        dotlottie_player.unsubscribe(&arc_observer);
+        EXIT_SUCCESS
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn dotlottie_player_state_machine_subscribe(
+    ptr: *mut DotLottiePlayer,
+    observer: *mut types::CStateMachineObserver,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        let boxed_variable = types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
+        let arc = types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
+
+        dotlottie_player.state_machine_subscribe(arc);
+        EXIT_SUCCESS
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn dotlottie_player_state_machine_unsubscribe(
+    ptr: *mut DotLottiePlayer,
+    observer: *mut types::CStateMachineObserver,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        let boxed_variable = types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
+        let arc = types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
+
+        dotlottie_player.state_machine_unsubscribe(arc);
+        EXIT_SUCCESS
+    })
 }
