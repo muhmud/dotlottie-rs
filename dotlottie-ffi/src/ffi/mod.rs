@@ -517,12 +517,10 @@ pub unsafe extern "C" fn dotlottie_set_state_machine_boolean_context(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_state_machine_framework_setup(
     ptr: *mut DotLottiePlayer,
-    result: *mut types::DotLottiei8Data,
+    result: *mut types::ListenerType,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = types::vec_strings_to_dotlottiei8data(
-            &dotlottie_player.state_machine_framework_setup(),
-        );
+        *result = types::ListenerType::new(&dotlottie_player.state_machine_framework_setup());
 
         EXIT_SUCCESS
     })
@@ -545,13 +543,10 @@ pub unsafe extern "C" fn dotlottie_load_state_machine_data(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_player_subscribe(
     ptr: *mut DotLottiePlayer,
-    observer: *mut types::CObserver,
+    observer: *mut types::Observer,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let box_observer = types::cobserver_to_box_of_observer(observer);
-        let arc_observer = types::box_of_observer_to_arc_of_observer(box_observer);
-
-        dotlottie_player.subscribe(arc_observer);
+        dotlottie_player.subscribe(observer.to_observer());
         EXIT_SUCCESS
     })
 }
