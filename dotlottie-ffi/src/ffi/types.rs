@@ -1,8 +1,8 @@
 use bitflags::bitflags;
-use dotlottie_player_core::{Observer, StateMachineObserver};
+use core::str::FromStr;
 use std::ffi::{CStr, CString};
+use std::io;
 use std::sync::Arc;
-use std::{io, ptr};
 
 use dotlottie_player_core::{Config, Fit, Layout, Marker, Mode};
 
@@ -37,10 +37,10 @@ impl FromStr for ListenerType {
 }
 
 impl ListenerType {
-    pub fn new(&listener_types: Vec<String>) -> Result<ListenerType, ListenerTypeParseError> {
-        let mut result: ListenerType = 0;
+    pub fn new(listener_types: &Vec<String>) -> Result<ListenerType, ListenerTypeParseError> {
+        let mut result: ListenerType;
         for &listener_type in listener_types {
-            result |= ListenerType::from_str(listener_type)?;
+            result |= ListenerType::from_str(&listener_type)?;
         }
         Ok(result)
     }
@@ -55,11 +55,11 @@ pub struct DotLottieFloatArray {
 
 impl DotLottieFloatArray {
     pub fn new(floats: Vec<f32>) -> Self {
-        let slice = floats.into_boxed_slice();
+        let mut slice = floats.into_boxed_slice();
         std::mem::forget(slice);
 
         DotLottieFloatArray {
-            ptr: slice,
+            ptr: slice.as_mut_ptr(),
             size: slice.len(),
         }
     }
@@ -81,12 +81,21 @@ pub struct DotLottieMarkerArray {
 }
 
 impl DotLottieMarkerArray {
-    pub fn new(markers: Vec<Marker>) -> DotLottieMarkerArray {
-        let slice = markers.into_boxed_slice();
+    pub unsafe fn new(markers: Vec<Marker>) -> DotLottieMarkerArray {
+        let mut slice = markers.into_boxed_slice();
+        let dotlottie_marker: *mut DotLottieMarker;
+        let name = (*slice.as_mut_ptr()).name;
+        if let Ok(name) = to_mut_i8(&name) {
+            *dotlottie_marker = DotLottieMarker {
+                name,
+                duration: (*slice.as_mut_ptr()).duration,
+                time: (*slice.as_mut_ptr()).time,
+            };
+        }
         std::mem::forget(slice);
 
         DotLottieMarkerArray {
-            ptr: slice,
+            ptr: dotlottie_marker,
             size: slice.len(),
         }
     }
@@ -115,7 +124,7 @@ pub struct DotLottieConfig {
 
 impl DotLottieConfig {
     pub unsafe fn to_config(&self) -> Config {
-        Config {
+       let mut config = Config {
             mode: self.mode,
             loop_animation: self.loop_animation,
             speed: self.speed,
@@ -127,16 +136,28 @@ impl DotLottieConfig {
                 fit: self.layout.fit.clone(),
                 align: Vec::from_raw_parts(self.segment.ptr, self.segment.size, self.segment.size),
             },
-            marker: to_string(self.marker),
+            marker: String::new(),
+        };
+
+        let marker = self.marker;
+        if let Ok(marker) = to_string(marker) {
+            config.marker = marker
         }
+        config
     }
 }
-
 pub unsafe fn to_string(value: *mut i8) -> Result<String, io::Error> {
     if value.is_null() {
-        Err(io::Error::new(io::ErrorKind::InvalidInput, "null pointer"))
-    } else {
-        CStr::from_ptr(value).to_str().map(String::to_owned)
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "null pointer"));
+    }
+
+    // Safely convert the C string to a Rust String
+    match CStr::from_ptr(value).to_str() {
+        Ok(s) => Ok(s.to_owned()),
+        Err(_) => Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "invalid UTF-8 sequence",
+        )),
     }
 }
 
@@ -218,18 +239,19 @@ pub struct StateMachineObserver {
 
 impl dotlottie_player_core::StateMachineObserver for StateMachineObserver {
     fn on_transition(&self, previous_state: String, new_state: String) {
-        if let Some(previous_state) = to_mut_i8(&previous_state) &&
-           let Some(new_state) = to_mut_i8(&new_state) {
-            unsafe { (self.on_transition_op)(previous_state, new_state) }
+        if let Ok(previous_state) = to_mut_i8(&previous_state) {
+            if let Ok(new_state) = to_mut_i8(&new_state) {
+                unsafe { (self.on_transition_op)(previous_state, new_state) }
+            }
         }
     }
     fn on_state_entered(&self, entering_state: String) {
-        if let Some(entering_state) = to_mut_i8(&entering_state) {
+        if let Ok(entering_state) = to_mut_i8(&entering_state) {
             unsafe { (self.on_state_entered_op)(entering_state) }
         }
     }
     fn on_state_exit(&self, leaving_state: String) {
-        if let Some(leaving_state) = to_mut_i8(&leaving_state) {
+        if let Ok(leaving_state) = to_mut_i8(&leaving_state) {
             unsafe { (self.on_state_exit_op)(leaving_state) }
         }
     }

@@ -354,7 +354,7 @@ pub unsafe extern "C" fn dotlottie_markers(
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let markers = dotlottie_player.markers();
-        *result = DotLottieMarkArray::new(markers);
+        *result = types::DotLottieMarkerArray::new(markers);
 
         EXIT_SUCCESS
     })
@@ -421,10 +421,10 @@ pub unsafe extern "C" fn dotlottie_segment_duration(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_animation_size(
     ptr: *mut DotLottiePlayer,
-    result: *mut types::DotLottieFloatData,
+    result: *mut types::DotLottieFloatArray,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = types::vec_floats_to_dotlottiefloatdata(dotlottie_player.animation_size());
+        *result = types::DotLottieFloatArray::new(dotlottie_player.animation_size());
 
         EXIT_SUCCESS
     })
@@ -554,13 +554,10 @@ pub unsafe extern "C" fn dotlottie_player_subscribe(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_player_unsubscribe(
     ptr: *mut DotLottiePlayer,
-    observer: *mut types::CObserver,
+    observer: *mut types::Observer,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let box_observer = types::cobserver_to_box_of_observer(observer);
-        let arc_observer = types::box_of_observer_to_arc_of_observer(box_observer);
-
-        dotlottie_player.unsubscribe(&arc_observer);
+        dotlottie_player.unsubscribe(observer.to_observer());
         EXIT_SUCCESS
     })
 }
@@ -568,15 +565,11 @@ pub unsafe extern "C" fn dotlottie_player_unsubscribe(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_player_state_machine_subscribe(
     ptr: *mut DotLottiePlayer,
-    observer: *mut types::CStateMachineObserver,
+    observer: *mut types::StateMachineObserver,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
         let boxed_variable =
-            types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
-        let arc =
-            types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
-
-        dotlottie_player.state_machine_subscribe(arc);
+        dotlottie_player.state_machine_subscribe(observer.to_observer());
         EXIT_SUCCESS
     })
 }
@@ -584,15 +577,10 @@ pub unsafe extern "C" fn dotlottie_player_state_machine_subscribe(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_player_state_machine_unsubscribe(
     ptr: *mut DotLottiePlayer,
-    observer: *mut types::CStateMachineObserver,
+    observer: *mut types::StateMachineObserver,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let boxed_variable =
-            types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
-        let arc =
-            types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
-
-        dotlottie_player.state_machine_unsubscribe(arc);
+        dotlottie_player.state_machine_unsubscribe(observer.to_observer());
         EXIT_SUCCESS
     })
 }

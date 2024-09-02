@@ -25,16 +25,16 @@ typedef struct DotLottiePlayer DotLottiePlayer;
 
 typedef struct Layout Layout;
 
-typedef struct Marker Marker;
+typedef struct ListenerType ListenerType;
 
 typedef struct String String;
 
 typedef struct Vec_f32 Vec_f32;
 
-typedef struct DotLottieFloatData {
+typedef struct DotLottieFloatArray {
   float *ptr;
   size_t size;
-} DotLottieFloatData;
+} DotLottieFloatArray;
 
 typedef struct Config {
   enum Mode mode;
@@ -48,10 +48,16 @@ typedef struct Config {
   struct String marker;
 } Config;
 
-typedef struct DotLottieMarkerData {
-  struct Marker *ptr;
+typedef struct DotLottieMarker {
+  int8_t *name;
+  float duration;
+  float time;
+} DotLottieMarker;
+
+typedef struct DotLottieMarkerArray {
+  struct DotLottieMarker *ptr;
   size_t size;
-} DotLottieMarkerData;
+} DotLottieMarkerArray;
 
 typedef void (*OnTransitionOp)(int8_t*, int8_t*);
 
@@ -59,11 +65,11 @@ typedef void (*OnStateEnteredOp)(int8_t*);
 
 typedef void (*OnStateExitOp)(int8_t*);
 
-typedef struct CStateMachineObserver {
+typedef struct StateMachineObserver {
   OnTransitionOp on_transition_op;
   OnStateEnteredOp on_state_entered_op;
   OnStateExitOp on_state_exit_op;
-} CStateMachineObserver;
+} StateMachineObserver;
 
 typedef void (*OnOp)(void);
 
@@ -73,7 +79,7 @@ typedef void (*OnRenderOp)(float);
 
 typedef void (*OnLoopOp)(uint32_t);
 
-typedef struct CObserver {
+typedef struct Observer {
   OnOp on_load_op;
   OnOp on_load_error_op;
   OnOp on_play_op;
@@ -83,16 +89,11 @@ typedef struct CObserver {
   OnRenderOp on_render_op;
   OnLoopOp on_loop_op;
   OnOp on_complete_op;
-} CObserver;
-
-typedef struct DotLottiei8Data {
-  int8_t *ptr;
-  size_t size;
-} DotLottiei8Data;
+} Observer;
 
 typedef struct DotLottieLayout {
   enum Fit fit;
-  struct DotLottieFloatData align;
+  struct DotLottieFloatArray align;
 } DotLottieLayout;
 
 typedef struct DotLottieConfig {
@@ -101,7 +102,7 @@ typedef struct DotLottieConfig {
   float speed;
   bool use_frame_interpolation;
   bool autoplay;
-  struct DotLottieFloatData segment;
+  struct DotLottieFloatArray segment;
   uint32_t background_color;
   struct DotLottieLayout layout;
   int8_t *marker;
@@ -111,7 +112,7 @@ int32_t dotlottie_active_animation_id(struct DotLottiePlayer *ptr, int8_t *resul
 
 int32_t dotlottie_active_theme_id(struct DotLottiePlayer *ptr, int8_t *result);
 
-int32_t dotlottie_animation_size(struct DotLottiePlayer *ptr, struct DotLottieFloatData *result);
+int32_t dotlottie_animation_size(struct DotLottiePlayer *ptr, struct DotLottieFloatArray *result);
 
 int32_t dotlottie_buffer_len(struct DotLottiePlayer *ptr, uint64_t *result);
 
@@ -151,7 +152,7 @@ int32_t dotlottie_loop_count(struct DotLottiePlayer *ptr, uint32_t *result);
 
 int32_t dotlottie_manifest_string(struct DotLottiePlayer *ptr, int8_t *result);
 
-int32_t dotlottie_markers(struct DotLottiePlayer *ptr, struct DotLottieMarkerData *result);
+int32_t dotlottie_markers(struct DotLottiePlayer *ptr, struct DotLottieMarkerArray *result);
 
 int32_t dotlottie_pause(struct DotLottiePlayer *ptr, bool *result);
 
@@ -176,14 +177,14 @@ int32_t dotlottie_player_load_animation_path(struct DotLottiePlayer *ptr,
                                              bool *result);
 
 int32_t dotlottie_player_state_machine_subscribe(struct DotLottiePlayer *ptr,
-                                                 struct CStateMachineObserver *observer);
+                                                 struct StateMachineObserver *observer);
 
 int32_t dotlottie_player_state_machine_unsubscribe(struct DotLottiePlayer *ptr,
-                                                   struct CStateMachineObserver *observer);
+                                                   struct StateMachineObserver *observer);
 
-int32_t dotlottie_player_subscribe(struct DotLottiePlayer *ptr, struct CObserver *observer);
+int32_t dotlottie_player_subscribe(struct DotLottiePlayer *ptr, struct Observer *observer);
 
-int32_t dotlottie_player_unsubscribe(struct DotLottiePlayer *ptr, struct CObserver *observer);
+int32_t dotlottie_player_unsubscribe(struct DotLottiePlayer *ptr, struct Observer *observer);
 
 int32_t dotlottie_render(struct DotLottiePlayer *ptr, bool *result);
 
@@ -225,7 +226,7 @@ int32_t dotlottie_set_viewport(struct DotLottiePlayer *ptr,
 int32_t dotlottie_start_state_machine(struct DotLottiePlayer *ptr, bool *result);
 
 int32_t dotlottie_state_machine_framework_setup(struct DotLottiePlayer *ptr,
-                                                struct DotLottiei8Data *result);
+                                                struct ListenerType *result);
 
 int32_t dotlottie_stop(struct DotLottiePlayer *ptr, bool *result);
 
