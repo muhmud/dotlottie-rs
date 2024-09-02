@@ -1297,13 +1297,9 @@ impl DotLottiePlayer {
 
                     for listener in listeners {
                         match listener.try_read() {
-                            Ok(listener) => {
-                                let unwrapped_listener = &*listener;
-
-                                if !listener_types
-                                    .contains(&unwrapped_listener.get_type().to_string())
-                                {
-                                    listener_types.push(unwrapped_listener.get_type().to_string());
+                            Ok(&listener) => {
+                                if !listener_types.contains(listener.get_type().to_string()) {
+                                    listener_types.push(listener.get_type().to_string());
                                 }
                             }
                             Err(_) => return vec![],

@@ -96,9 +96,12 @@ pub unsafe extern "C" fn dotlottie_manifest_string(
     result: *mut i8,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = *types::to_mut_i8(dotlottie_player.manifest_string());
-
-        EXIT_SUCCESS
+        if let Ok(manifest_string) = types::to_mut_i8(&dotlottie_player.manifest_string()) {
+            result = manifest_string;
+            EXIT_SUCCESS
+        } else {
+            EXIT_ERROR
+        }
     })
 }
 
@@ -347,11 +350,11 @@ pub unsafe extern "C" fn dotlottie_load_theme_data(
 #[no_mangle]
 pub unsafe extern "C" fn dotlottie_markers(
     ptr: *mut DotLottiePlayer,
-    result: *mut types::DotLottieMarkerData,
+    result: *mut types::DotLottieMarkerArray,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let mut markers = dotlottie_player.markers();
-        *result = types::vec_markers_to_dotlottiemarkerdata(&mut markers);
+        let markers = dotlottie_player.markers();
+        *result = DotLottieMarkArray::new(markers);
 
         EXIT_SUCCESS
     })
@@ -363,9 +366,12 @@ pub unsafe extern "C" fn dotlottie_active_animation_id(
     result: *mut i8,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = *types::to_mut_i8(dotlottie_player.active_animation_id());
-
-        EXIT_SUCCESS
+        if let Ok(active_animation_id) = types::to_mut_i8(&dotlottie_player.active_animation_id()) {
+            result = active_animation_id;
+            EXIT_SUCCESS
+        } else {
+            EXIT_ERROR
+        }
     })
 }
 
@@ -375,9 +381,12 @@ pub unsafe extern "C" fn dotlottie_active_theme_id(
     result: *mut i8,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        *result = *types::to_mut_i8(dotlottie_player.active_theme_id());
-
-        EXIT_SUCCESS
+        if let Ok(active_theme_id) = types::to_mut_i8(&dotlottie_player.active_theme_id()) {
+            result = active_theme_id;
+            EXIT_SUCCESS
+        } else {
+            EXIT_ERROR
+        }
     })
 }
 
@@ -567,8 +576,10 @@ pub unsafe extern "C" fn dotlottie_player_state_machine_subscribe(
     observer: *mut types::CStateMachineObserver,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let boxed_variable = types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
-        let arc = types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
+        let boxed_variable =
+            types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
+        let arc =
+            types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
 
         dotlottie_player.state_machine_subscribe(arc);
         EXIT_SUCCESS
@@ -581,8 +592,10 @@ pub unsafe extern "C" fn dotlottie_player_state_machine_unsubscribe(
     observer: *mut types::CStateMachineObserver,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let boxed_variable = types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
-        let arc = types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
+        let boxed_variable =
+            types::cstate_machine_observer_to_box_of_state_machine_observer(observer);
+        let arc =
+            types::box_of_state_machine_observer_to_arc_of_state_machine_observer(boxed_variable);
 
         dotlottie_player.state_machine_unsubscribe(arc);
         EXIT_SUCCESS

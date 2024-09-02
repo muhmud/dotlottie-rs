@@ -1,36 +1,102 @@
+use bitflags::bitflags;
 use dotlottie_player_core::{Observer, StateMachineObserver};
-use std::ffi::CString;
-use std::ptr;
+use std::ffi::{CStr, CString};
 use std::sync::Arc;
+use std::{io, ptr};
 
 use dotlottie_player_core::{Config, Fit, Layout, Marker, Mode};
 
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[repr(C)]
+    pub struct ListenerType: u16 {
+        const POINTER_UP    = 1 << 0;
+        const POINTER_DOWN  = 1 << 1;
+        const POINTER_ENTER = 1 << 2;
+        const POINTER_EXIT  = 1 << 3;
+        const POINTER_MOVE  = 1 << 4;
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct ListenerTypeParseError;
+
+impl FromStr for ListenerType {
+    type Err = ListenerTypeParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "PointerUp" => Ok(ListenerType::POINTER_UP),
+            "PointerDown" => Ok(ListenerType::POINTER_DOWN),
+            "PointerEnter" => Ok(ListenerType::POINTER_ENTER),
+            "PointerExit" => Ok(ListenerType::POINTER_EXIT),
+            "PointerMove" => Ok(ListenerType::POINTER_MOVE),
+            _ => Err(ListenerTypeParseError()),
+        }
+    }
+}
+
+impl ListenerType {
+    pub fn new(&listener_types: Vec<String>) -> Result<ListenerType, ListenerTypeParseError> {
+        let mut result: ListenerType = 0;
+        for &listener_type in listener_types {
+            result |= ListenerType::from_str(listener_type)?;
+        }
+        Ok(result)
+    }
+}
+
 #[derive(Clone, PartialEq)]
 #[repr(C)]
-pub struct DotLottieFloatData {
+pub struct DotLottieFloatArray {
     pub ptr: *mut f32,
     pub size: usize,
 }
 
-#[derive(Clone, PartialEq)]
-#[repr(C)]
-pub struct DotLottiei8Data {
-    pub ptr: *mut i8,
-    pub size: usize,
+impl DotLottieFloatArray {
+    pub fn new(floats: Vec<f32>) -> Self {
+        let slice = floats.into_boxed_slice();
+        std::mem::forget(slice);
+
+        DotLottieFloatArray {
+            ptr: slice,
+            size: slice.len(),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
 #[repr(C)]
-pub struct DotLottieMarkerData {
-    pub ptr: *mut Marker,
+pub struct DotLottieMarker {
+    pub name: *mut i8,
+    pub duration: f32,
+    pub time: f32,
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottieMarkerArray {
+    pub ptr: *mut DotLottieMarker,
     pub size: usize,
+}
+
+impl DotLottieMarkerArray {
+    pub fn new(markers: Vec<Marker>) -> DotLottieMarkerArray {
+        let slice = markers.into_boxed_slice();
+        std::mem::forget(slice);
+
+        DotLottieMarkerArray {
+            ptr: slice,
+            size: slice.len(),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
 #[repr(C)]
 pub struct DotLottieLayout {
     pub fit: Fit,
-    pub align: DotLottieFloatData,
+    pub align: DotLottieFloatArray,
 }
 
 #[derive(Clone, PartialEq)]
@@ -41,7 +107,7 @@ pub struct DotLottieConfig {
     pub speed: f32,
     pub use_frame_interpolation: bool,
     pub autoplay: bool,
-    pub segment: DotLottieFloatData,
+    pub segment: DotLottieFloatArray,
     pub background_color: u32,
     pub layout: DotLottieLayout,
     pub marker: *mut i8,
@@ -66,65 +132,18 @@ impl DotLottieConfig {
     }
 }
 
-pub unsafe fn to_string(value: *mut i8) -> String {
+pub unsafe fn to_string(value: *mut i8) -> Result<String, io::Error> {
     if value.is_null() {
-        String::new()
+        Err(io::Error::new(io::ErrorKind::InvalidInput, "null pointer"))
     } else {
-        CString::from_raw(value).to_str().unwrap_or("").to_owned()
+        CStr::from_ptr(value).to_str().map(String::to_owned)
     }
 }
 
-pub unsafe fn to_mut_i8(value: String) -> *mut i8 {
-    if value.is_empty() {
-        ptr::null_mut() // Return a null pointer if the string is empty
-    } else {
-        let c_string = CString::new(value).expect("CString::new failed");
-        c_string.into_raw() // Convert the CString into a raw pointer
-    }
-}
-
-pub unsafe fn vec_strings_to_dotlottiei8data(strings: &Vec<String>) -> DotLottiei8Data {
-    // Concatenate all strings into one String
-    let concatenated = strings.join("");
-
-    // Convert the concatenated String into bytes
-    let bytes = concatenated.into_bytes();
-    let size = bytes.len();
-
-    // Convert bytes into a Vec<i8>
-    let mut vec_i8: Vec<i8> = bytes.into_iter().map(|b| b as i8).collect();
-
-    // Get a raw pointer to the Vec<i8> data
-    let ptr = vec_i8.as_mut_ptr();
-
-    // Prevent Rust from deallocating the memory by not using std::mem::forget
-    std::mem::forget(vec_i8); // Keep the memory alive
-
-    DotLottiei8Data { ptr, size }
-}
-
-pub fn vec_floats_to_dotlottiefloatdata(floats: Vec<f32>) -> DotLottieFloatData {
-    let size = floats.len(); // Get the size of the data
-
-    // Box the Vec<f32> to ensure memory is managed properly
-    let boxed_slice = floats.into_boxed_slice();
-
-    // Get a raw pointer to the boxed slice
-    let ptr = boxed_slice.as_ptr() as *mut f32;
-
-    // Move the boxed slice out of scope to prevent deallocation
-    std::mem::forget(boxed_slice);
-
-    DotLottieFloatData { ptr, size }
-}
-
-pub unsafe fn vec_markers_to_dotlottiemarkerdata(markers: &mut Vec<Marker>) -> DotLottieMarkerData {
-    let size = markers.len(); // Get the size of the data
-
-    // Get a raw pointer to the data and the size
-    let ptr = markers.as_mut_ptr();
-
-    DotLottieMarkerData { ptr, size }
+pub fn to_mut_i8(value: &str) -> Result<*mut i8, io::Error> {
+    CString::new(value)
+        .map(CString::into_raw)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
 // Function pointer types
@@ -136,7 +155,7 @@ pub type OnLoopOp = unsafe extern "C" fn(u32);
 
 // Observers
 #[repr(C)]
-pub struct CObserver {
+pub struct Observer {
     pub on_load_op: OnOp,
     pub on_load_error_op: OnOp,
     pub on_play_op: OnOp,
@@ -148,7 +167,7 @@ pub struct CObserver {
     pub on_complete_op: OnOp,
 }
 
-impl Observer for CObserver {
+impl dotlottie_player_core::Observer for Observer {
     fn on_load(&self) {
         unsafe { (self.on_load_op)() }
     }
@@ -178,51 +197,48 @@ impl Observer for CObserver {
     }
 }
 
+impl Observer {
+    pub unsafe fn to_observer(&self) -> Arc<dyn dotlottie_player_core::Observer> {
+        Arc::from(Box::from_raw(
+            self as *mut dyn dotlottie_player_core::Observer,
+        ))
+    }
+}
+
 pub type OnTransitionOp = unsafe extern "C" fn(*mut i8, *mut i8);
 pub type OnStateEnteredOp = unsafe extern "C" fn(*mut i8);
 pub type OnStateExitOp = unsafe extern "C" fn(*mut i8);
 
 #[repr(C)]
-pub struct CStateMachineObserver {
+pub struct StateMachineObserver {
     pub on_transition_op: OnTransitionOp,
     pub on_state_entered_op: OnStateEnteredOp,
     pub on_state_exit_op: OnStateExitOp,
 }
 
-impl StateMachineObserver for CStateMachineObserver {
+impl dotlottie_player_core::StateMachineObserver for StateMachineObserver {
     fn on_transition(&self, previous_state: String, new_state: String) {
-        unsafe { (self.on_transition_op)(to_mut_i8(previous_state), to_mut_i8(new_state)) }
+        if let Some(previous_state) = to_mut_i8(&previous_state) &&
+           let Some(new_state) = to_mut_i8(&new_state) {
+            unsafe { (self.on_transition_op)(previous_state, new_state) }
+        }
     }
     fn on_state_entered(&self, entering_state: String) {
-        unsafe { (self.on_state_entered_op)(to_mut_i8(entering_state)) }
+        if let Some(entering_state) = to_mut_i8(&entering_state) {
+            unsafe { (self.on_state_entered_op)(entering_state) }
+        }
     }
     fn on_state_exit(&self, leaving_state: String) {
-        unsafe { (self.on_state_exit_op)(to_mut_i8(leaving_state)) }
+        if let Some(leaving_state) = to_mut_i8(&leaving_state) {
+            unsafe { (self.on_state_exit_op)(leaving_state) }
+        }
     }
 }
 
-pub unsafe fn cobserver_to_box_of_observer(ptr: *mut CObserver) -> Box<dyn Observer> {
-    if ptr.is_null() {
-        panic!("Received null pointer");
+impl StateMachineObserver {
+    pub unsafe fn to_observer(&self) -> Arc<dyn dotlottie_player_core::StateMachineObserver> {
+        Arc::from(Box::from_raw(
+            self as *mut dyn dotlottie_player_core::StateMachineObserver,
+        ))
     }
-
-    // Convert the raw pointer to `Box<dyn Observer>`
-    Box::from_raw(ptr as *mut dyn Observer)
-}
-
-pub fn box_of_observer_to_arc_of_observer(box_observer: Box<dyn Observer>) -> Arc<dyn Observer> {
-    Arc::from(box_observer)
-}
-
-pub unsafe fn cstate_machine_observer_to_box_of_state_machine_observer(ptr: *mut CStateMachineObserver) -> Box<dyn StateMachineObserver> {
-    if ptr.is_null() {
-        panic!("Received null pointer");
-    }
-
-    // Convert the raw pointer to `Box<dyn Observer>`
-    Box::from_raw(ptr as *mut dyn StateMachineObserver)
-}
-
-pub fn box_of_state_machine_observer_to_arc_of_state_machine_observer(state_machine_observer: Box<dyn StateMachineObserver>) -> Arc<dyn StateMachineObserver> {
-    Arc::from(state_machine_observer)
 }
