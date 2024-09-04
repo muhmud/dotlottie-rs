@@ -6,6 +6,9 @@ use std::sync::Arc;
 
 use dotlottie_player_core::{Config, Fit, Layout, Marker, Mode};
 
+#[cbindgen::define]
+pub const MAX_STR_LENGTH: usize = 128;
+
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     #[repr(C)]
@@ -48,55 +51,31 @@ impl ListenerType {
 
 #[derive(Clone, PartialEq)]
 #[repr(C)]
-pub struct DotLottieFloatArray {
-    pub ptr: *mut f32,
-    pub size: usize,
-}
-
-impl DotLottieFloatArray {
-    pub fn new(floats: Vec<f32>) -> Self {
-        let mut slice = floats.into_boxed_slice();
-        std::mem::forget(slice);
-
-        DotLottieFloatArray {
-            ptr: slice.as_mut_ptr(),
-            size: slice.len(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq)]
-#[repr(C)]
 pub struct DotLottieMarker {
-    pub name: *mut i8,
+    pub name: [u8; MAX_STR_LENGTH],
     pub duration: f32,
     pub time: f32,
 }
 
-#[derive(Clone, PartialEq)]
-#[repr(C)]
-pub struct DotLottieMarkerArray {
-    pub ptr: *mut DotLottieMarker,
-    pub size: usize,
-}
+impl DotLottieMarker {
+    pub unsafe fn new(marker: Marker) -> Result<DotLottieMarker> {
+        let name: [u8; MAX_STR_LENGTH];
+        to_native_string(&marker.name, name, MAX_STR_LENGTH)?;
+        Ok(DotLottieMarker {
+            name,
+            duration: marker.duration,
+            time: marker.time,
+        })
+    }
 
-impl DotLottieMarkerArray {
-    pub unsafe fn new(markers: Vec<Marker>) -> DotLottieMarkerArray {
-        let mut slice = markers.into_boxed_slice();
-        let dotlottie_marker: *mut DotLottieMarker;
-        let name = (*slice.as_mut_ptr()).name;
-        if let Ok(name) = to_mut_i8(&name) {
-            *dotlottie_marker = DotLottieMarker {
-                name,
-                duration: (*slice.as_mut_ptr()).duration,
-                time: (*slice.as_mut_ptr()).time,
-            };
-        }
-        std::mem::forget(slice);
+    pub unsafe fn copy(&self, buffer: *mut DotLottieMarker) {
+        std::ptr::copy_nonoverlapping(self as *const DotLottieMarker, buffer, std::mem::size_of<DotLottieMarker>());
+    }
 
-        DotLottieMarkerArray {
-            ptr: dotlottie_marker,
-            size: slice.len(),
+    pub unsafe fn copy_all(values: &Vec<DotLottieMarker>, buffer: *mut DotLottieMarker) {
+        for value in values{
+            copy(value, buffer);
+            buffer += 1;
         }
     }
 }
@@ -105,7 +84,33 @@ impl DotLottieMarkerArray {
 #[repr(C)]
 pub struct DotLottieLayout {
     pub fit: Fit,
-    pub align: DotLottieFloatArray,
+    pub align_x: f32,
+    pub align_y: f32,
+}
+
+impl DotLottieLayout {
+    pub fn new(layout: Layout) {
+        let (align_x, align_y) = match config.align {
+            [align_x, align_y] => (align_x, align_y),
+            _ => (-1.0, -1.0),
+        };
+        DotLottieLayout {
+            fit: layout.fit,
+            align_x,
+            align_y,
+        }
+    }
+
+    pub fn to_layout(self) {
+        Layout {
+            fit: self.fit,
+            align: if self.align_x >= 0 && self.align_y >= 0 {
+                vec![self.align_x, self.align_y]
+            } else {
+                vec![]
+            },
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -116,55 +121,83 @@ pub struct DotLottieConfig {
     pub speed: f32,
     pub use_frame_interpolation: bool,
     pub autoplay: bool,
-    pub segment: DotLottieFloatArray,
+    pub segment_start: f32,
+    pub segment_end: f32,
     pub background_color: u32,
     pub layout: DotLottieLayout,
-    pub marker: *mut i8,
+    pub marker: [u8; MAX_STR_LENGTH],
 }
 
 impl DotLottieConfig {
-    pub unsafe fn to_config(&self) -> Config {
-       let mut config = Config {
+    pub unsafe fn new(config: Config) -> Result<DotLottieConfig> {
+        let (segment_start, segment_end) = match config.segment {
+            [start, end] => (start, end),
+            _ => (-1.0, -1.0),
+        };
+        let marker: [u8; MAX_STR_LENGTH];
+        to_native_string(&config.marker, marker, MAX_STR_LENGTH)?;
+        Ok(DotLottieConfig {
+            mode: config.mode,
+            loop_animation: config.loop_animation,
+            speed: config.speed,
+            use_frame_interpolation: config.use_frame_interpolation,
+            autoplay: config.autoplay,
+            segment_start,
+            segment_end,
+            background_color: config.background_color,
+            layout: DotLottieLayout::to_layout(config.layout),
+            marker,
+        })
+    }
+
+    pub unsafe fn to_config(self) -> Result<Config> {
+        Ok(Config {
             mode: self.mode,
             loop_animation: self.loop_animation,
             speed: self.speed,
             use_frame_interpolation: self.use_frame_interpolation,
             autoplay: self.autoplay,
-            segment: Vec::from_raw_parts(self.segment.ptr, self.segment.size, self.segment.size),
-            background_color: self.background_color,
-            layout: Layout {
-                fit: self.layout.fit.clone(),
-                align: Vec::from_raw_parts(self.segment.ptr, self.segment.size, self.segment.size),
+            segment: if self.segment_start >= 0 && self.segment_end >= 0 {
+                vec![self.segment_start, self.segment_end]
+            } else {
+                vec![]
             },
-            marker: String::new(),
-        };
+            background_color: self.background_color,
+            layout: to_layout(self.layout),
+            marker: to_string(self.marker.as_ptr())?,
+        })
+    }
 
-        let marker = self.marker;
-        if let Ok(marker) = to_string(marker) {
-            config.marker = marker
-        }
-        config
+    pub unsafe fn copy(&self, buffer: *mut DotLottieConfig) {
+        std::ptr::copy_nonoverlapping(self as *const DotLottieConfig, buffer, std::mem::size_of<DotLottieConfig>());
     }
 }
-pub unsafe fn to_string(value: *mut i8) -> Result<String, io::Error> {
+
+pub unsafe fn to_string(value: *mut i8) -> Result<String> {
     if value.is_null() {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "null pointer"));
     }
-
-    // Safely convert the C string to a Rust String
     match CStr::from_ptr(value).to_str() {
         Ok(s) => Ok(s.to_owned()),
         Err(_) => Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "invalid UTF-8 sequence",
+            "invalid utf8 sequence",
         )),
     }
 }
 
-pub fn to_mut_i8(value: &str) -> Result<*mut i8, io::Error> {
-    CString::new(value)
-        .map(CString::into_raw)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+pub unsafe fn to_native_string(value: &str, buffer: *mut u8, size: usize) -> Result<()> {
+    let bytes = CString::new(value)
+        .map_err(|e| Err(io::Error::new(io::ErrorKind::InvalidInput, "null pointer")))?
+        .as_bytes_with_nul();
+    if bytes.len() <= size {
+        Ok(std::ptr::copy_nonoverlapping(bytes, buffer, bytes.len()))
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "value too large",
+        ))
+    }
 }
 
 // Function pointer types
