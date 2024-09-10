@@ -48,6 +48,53 @@ typedef struct Config {
   struct String marker;
 } Config;
 
+typedef struct DotLottieManifestAnimation {
+  bool autoplay;
+  int8_t *default_theme;
+  int8_t direction;
+  bool hover;
+  int8_t *id;
+  uint32_t intermission;
+  bool loop;
+  uint32_t loop_count;
+  int8_t *play_mode;
+  float speed;
+  int8_t *theme_color;
+} DotLottieManifestAnimation;
+
+typedef struct DotLottieManifestAnimationArray {
+  struct DotLottieManifestAnimation *ptr;
+  size_t size;
+} DotLottieManifestAnimationArray;
+
+typedef struct DotLottieMuti8Array {
+  int8_t *ptr;
+  size_t size;
+} DotLottieMuti8Array;
+
+typedef struct DotLottieManifestTheme {
+  int8_t *id;
+  struct DotLottieMuti8Array animations;
+} DotLottieManifestTheme;
+
+typedef struct DotLottieManifestThemeArray {
+  struct DotLottieManifestTheme *ptr;
+  size_t size;
+} DotLottieManifestThemeArray;
+
+typedef struct DotLottieManifest {
+  int8_t *active_animation_id;
+  struct DotLottieManifestAnimationArray animations;
+  int8_t *author;
+  int8_t *description;
+  int8_t *generator;
+  int8_t *keywords;
+  uint32_t revision;
+  struct DotLottieManifestThemeArray themes;
+  struct DotLottieMuti8Array states;
+  int8_t *version;
+} DotLottieManifest;
+
 typedef struct DotLottieMarker {
   int8_t *name;
   float duration;
@@ -149,6 +196,8 @@ int32_t dotlottie_load_theme_data(struct DotLottiePlayer *ptr,
                                   bool *result);
 
 int32_t dotlottie_loop_count(struct DotLottiePlayer *ptr, uint32_t *result);
+
+int32_t dotlottie_manifest(struct DotLottiePlayer *ptr, struct DotLottieManifest *result);
 
 int32_t dotlottie_manifest_string(struct DotLottiePlayer *ptr, int8_t *result);
 

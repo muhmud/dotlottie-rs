@@ -4,6 +4,7 @@ use std::ffi::{CStr, CString};
 use std::io;
 use std::sync::Arc;
 
+use dotlottie_fms::{Manifest, ManifestAnimation, ManifestTheme};
 use dotlottie_player_core::{Config, Fit, Layout, Marker, Mode};
 
 bitflags! {
@@ -67,10 +68,141 @@ impl DotLottieFloatArray {
 
 #[derive(Clone, PartialEq)]
 #[repr(C)]
+pub struct DotLottieMuti8Array {
+    pub ptr: *mut i8,
+    pub size: usize,
+}
+
+impl DotLottieMuti8Array {
+    pub fn new(muti8s: Vec<str>) -> Self {
+        let mut slice = muti8s.into_boxed_slice();
+        std::mem::forget(slice);
+        let result = to_mut_i8(slice);
+
+        DotLottieMuti8Array {
+            ptr: to_mut_i8(Ok(Result)),
+            size: slice.len(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
 pub struct DotLottieMarker {
     pub name: *mut i8,
     pub duration: f32,
     pub time: f32,
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+
+pub struct DotLottieManifestAnimation {
+    pub autoplay: bool,
+    pub default_theme: *mut i8,
+    pub direction: i8,
+    pub hover: bool,
+    pub id: *mut i8,
+    pub intermission: u32,
+    pub r#loop: bool,
+    pub loop_count: u32,
+    pub play_mode: *mut i8,
+    pub speed: f32,
+    pub theme_color: *mut i8,
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottieManifestAnimationArray {
+    pub ptr: *mut DotLottieManifestAnimation,
+    pub size: usize,
+}
+
+impl DotLottieManifestAnimationArray {
+    pub unsafe fn new(manifests: Vec<ManifestAnimation>) -> Self {
+        let mut slice = manifests.into_boxed_slice();
+        std::mem::forget(slice);
+        let swv = (*slice.as_mut_ptr());
+
+        DotLottieManifestAnimationArray {
+            ptr: DotLottieManifestAnimation {
+                autoplay: swv.autoplay,
+                default_theme: Ok(to_mut_i8(swv.defaultTheme)),
+                direction: swv.direction,
+                hover: swv.hover,
+                id: Ok(to_mut_i8(&swv.id)),
+                intermission: swv.intermission,
+                r#loop: swv.r#loop,
+                loop_count: swv.loop_count,
+                play_mode: Ok(to_mut_i8(swv.playMode)),
+                speed: swv.speed,
+                theme_color: Ok(to_mut_i8(swv.themeColor)),
+            },
+            size: slice.len(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottieManifestTheme {
+    pub id: *mut i8,
+    pub animations: DotLottieMuti8Array,
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottieManifestThemeArray {
+    pub ptr: *mut DotLottieManifestTheme,
+    pub size: usize,
+}
+
+impl DotLottieManifestThemeArray {
+    pub unsafe fn new(manifest_themes: Vec<ManifestTheme>) -> Self {
+        let mut slice = manifest_themes.into_boxed_slice();
+        std::mem::forget(slice);
+        let swv = (*slice.as_mut_ptr());
+
+        DotLottieManifestThemeArray {
+            ptr: DotLottieManifestTheme {
+                id: swv.id,
+                animations: DotLottieMuti8Array::new(swv.animations)
+            },
+            size: slice.len(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
+#[repr(C)]
+pub struct DotLottieManifest {
+    pub active_animation_id: *mut i8,
+    pub animations: DotLottieManifestAnimationArray,
+    pub author: *mut i8,
+    pub description: *mut i8,
+    pub generator: *mut i8,
+    pub keywords: *mut i8,
+    pub revision: u32,
+    pub themes: DotLottieManifestThemeArray,
+    pub states: DotLottieMuti8Array,
+    pub version: *mut i8,
+}
+
+impl DotLottieManifest {
+    pub unsafe fn new(manifest: Manifest) -> DotLottieManifest {
+        let dl_manifest: DotLottieManifest = DotLottieManifest {
+            active_animation_id: Ok(manifest.active_animation_id),
+            animations: DotLottieManifestAnimationArray::new(manifest.animations),
+            author: to_mut_i8(manifest.author),
+            description: to_mut_i8(manifest.description),
+            generator: to_mut_i8(manifest.generator),
+            keywords: to_mut_i8(manifest.keywords),
+            revision: manifest.revision,
+            themes: DotLottieManifestThemeArray::new(manifest.themes),
+            states: DotLottieMuti8Array::new(manifest.states),
+            version: to_mut_i8(manifest.version)
+        };
+    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -124,7 +256,7 @@ pub struct DotLottieConfig {
 
 impl DotLottieConfig {
     pub unsafe fn to_config(&self) -> Config {
-       let mut config = Config {
+        let mut config = Config {
             mode: self.mode,
             loop_animation: self.loop_animation,
             speed: self.speed,

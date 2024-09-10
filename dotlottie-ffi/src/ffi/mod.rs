@@ -91,6 +91,18 @@ pub unsafe extern "C" fn dotlottie_player_load_animation(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn dotlottie_manifest(
+    ptr: *mut DotLottiePlayer,
+    result: *mut types::DotLottieManifest,
+) -> i32 {
+    exec_dotlottie_player_op(ptr, |dotlottie_player| {
+        *result = types::DotLottieManifest::new(dotlottie_player.manifest());
+
+        EXIT_SUCCESS
+    })
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn dotlottie_manifest_string(
     ptr: *mut DotLottiePlayer,
     result: *mut i8,
@@ -568,8 +580,7 @@ pub unsafe extern "C" fn dotlottie_player_state_machine_subscribe(
     observer: *mut types::StateMachineObserver,
 ) -> i32 {
     exec_dotlottie_player_op(ptr, |dotlottie_player| {
-        let boxed_variable =
-        dotlottie_player.state_machine_subscribe(observer.to_observer());
+        let boxed_variable = dotlottie_player.state_machine_subscribe(observer.to_observer());
         EXIT_SUCCESS
     })
 }
