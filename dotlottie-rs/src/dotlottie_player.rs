@@ -970,6 +970,10 @@ impl DotLottiePlayerContainer {
         self.runtime.read().unwrap().manifest()
     }
 
+    pub fn buffer(&self) -> *const u32 {
+        self.runtime.read().unwrap().buffer().as_ptr()
+    }
+
     pub fn buffer_ptr(&self) -> u64 {
         self.runtime.read().unwrap().buffer().as_ptr().cast::<u32>() as u64
     }
@@ -1677,6 +1681,10 @@ impl DotLottiePlayer {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn manifest(&self) -> Option<Manifest> {
         self.player.read().unwrap().manifest()
+    }
+
+    pub fn buffer(&self) -> *const u32 {
+        self.player.read().unwrap().buffer()
     }
 
     pub fn buffer_ptr(&self) -> u64 {
